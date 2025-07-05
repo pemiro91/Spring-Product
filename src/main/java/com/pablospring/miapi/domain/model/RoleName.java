@@ -1,0 +1,6 @@
+package com.pablospring.miapi.domain.model;
+
+public enum RoleName {
+    ROLE_USER,
+    ROLE_ADMIN
+}
