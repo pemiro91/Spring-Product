@@ -3,11 +3,13 @@ package com.pablospring.miapi.config;
 import com.pablospring.miapi.domain.model.User;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.Date;
 
 @Component
@@ -26,9 +28,19 @@ public class JwtUtils {
         }
     }
 
-    public String generateToken(User user) {
+    public boolean validateToken(String token) {
+        Jwts.parserBuilder()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token);
+        return true;
+    }
+
+
+    public String generateToken(User user, Collection<? extends GrantedAuthority> authorities) {
         return Jwts.builder()
                 .setSubject(user.getUsername())
+                .claim("roles", authorities.stream().map(GrantedAuthority::getAuthority).toList())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getExpiration()))
                 .signWith(secretKey, SignatureAlgorithm.HS256)
@@ -47,6 +59,7 @@ public class JwtUtils {
     public String getUsernameFromToken(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(secretKey)
+                .setAllowedClockSkewSeconds(60)
                 .build()
                 .parseClaimsJws(token)
                 .getBody()
@@ -56,6 +69,7 @@ public class JwtUtils {
     private Claims getClaimsFromToken(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(secretKey)
+                .setAllowedClockSkewSeconds(60)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();

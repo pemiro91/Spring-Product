@@ -10,9 +10,11 @@ import com.pablospring.miapi.domain.model.User;
 import com.pablospring.miapi.domain.repository.RoleRepository;
 import com.pablospring.miapi.domain.repository.UserRepository;
 import com.pablospring.miapi.presentation.dto.auth.RegisterRequest;
+import com.pablospring.miapi.presentation.dto.auth.TokenResponse;
 import com.pablospring.miapi.presentation.dto.user.UserResponse;
 import com.pablospring.miapi.presentation.dto.auth.LoginRequest;
 import com.pablospring.miapi.presentation.dto.auth.LoginResponse;
+import io.jsonwebtoken.JwtException;
 import jakarta.annotation.PostConstruct;
 import lombok.*;
 
@@ -22,6 +24,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -92,7 +95,7 @@ public class AuthService {
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        String token = jwtUtils.generateToken(user);
+        String token = jwtUtils.generateToken(user, user.getAuthorities());
         String refresh = jwtUtils.generateRefreshToken(user);
 
         UserResponse userDto = new UserResponse(
@@ -106,5 +109,21 @@ public class AuthService {
 
         return new LoginResponse(token, refresh, userDto);
 
+    }
+
+    public TokenResponse refreshToken(String refreshToken) {
+        if (!jwtUtils.validateToken(refreshToken)) {
+            throw new JwtException("Refresh token inválido o expirado");
+        }
+
+        String username = jwtUtils.getUsernameFromToken(refreshToken);
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
+
+        String newAccessToken = jwtUtils.generateToken(user, user.getAuthorities());
+        String newRefreshToken = jwtUtils.generateRefreshToken(user);
+
+        return new TokenResponse(newAccessToken, newRefreshToken);
     }
 }

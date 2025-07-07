@@ -1,11 +1,9 @@
 package com.pablospring.miapi.presentation.dto.product;
 
 import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
-@Getter
-@Setter
+@Data
 @Builder
 public class ProductResponse {
     private Long id;

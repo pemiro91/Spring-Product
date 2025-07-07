@@ -1,11 +1,16 @@
 package com.pablospring.miapi.presentation.controller;
 
 import com.pablospring.miapi.domain.model.Product;
+import com.pablospring.miapi.payload.ApiResponse;
 import com.pablospring.miapi.presentation.dto.product.ProductRequest;
 import com.pablospring.miapi.presentation.dto.product.ProductResponse;
 import com.pablospring.miapi.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -21,9 +26,16 @@ public class ProductController {
     private final ProductService productService;
 
     @GetMapping
+    public ApiResponse<Page<ProductResponse>> getProductsPages(Pageable pageable) {
+        Page<ProductResponse> products = productService.listAllForPage(pageable);
+        return ApiResponse.success("Lista de productos paginada", products);
+    }
+
+    @GetMapping("/all")
     public ResponseEntity<List<ProductResponse>> list() {
         return ResponseEntity.ok(productService.listAll());
     }
+
 
     @GetMapping("/{id}")
     public ResponseEntity<Product> getProduct(@PathVariable Long id) {
