@@ -19,9 +19,9 @@ import java.util.stream.Collectors;
 @Setter
 @NoArgsConstructor
 @ToString(exclude = "roles")
-@EqualsAndHashCode(exclude = "roles")
+@EqualsAndHashCode(exclude = "roles", callSuper = false)
 @AllArgsConstructor
-public class User implements UserDetails {
+public class User extends AuditableEntity implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

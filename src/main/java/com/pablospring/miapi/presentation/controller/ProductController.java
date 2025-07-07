@@ -2,6 +2,7 @@ package com.pablospring.miapi.presentation.controller;
 
 import com.pablospring.miapi.domain.model.Product;
 import com.pablospring.miapi.payload.ApiResponse;
+import com.pablospring.miapi.presentation.dto.product.PageResponse;
 import com.pablospring.miapi.presentation.dto.product.ProductRequest;
 import com.pablospring.miapi.presentation.dto.product.ProductResponse;
 import com.pablospring.miapi.service.ProductService;
@@ -26,9 +27,16 @@ public class ProductController {
     private final ProductService productService;
 
     @GetMapping
-    public ApiResponse<Page<ProductResponse>> getProductsPages(Pageable pageable) {
+    public ApiResponse<PageResponse<ProductResponse>> getProductsPages(Pageable pageable) {
         Page<ProductResponse> products = productService.listAllForPage(pageable);
-        return ApiResponse.success("Lista de productos paginada", products);
+        PageResponse<ProductResponse> pageResponse = new PageResponse<>(
+                products.getContent(),
+                products.getNumber(),
+                products.getSize(),
+                products.getTotalElements(),
+                products.getTotalPages()
+        );
+        return ApiResponse.success("Lista de productos paginada", pageResponse);
     }
 
     @GetMapping("/all")
