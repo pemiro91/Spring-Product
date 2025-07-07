@@ -18,11 +18,14 @@ public class Product extends AuditableEntity {
 
     private String name;
 
+    @Column(name = "imagen_url")
+    private String imagenUrl;
+
     private String description;
 
     private Double price;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 }

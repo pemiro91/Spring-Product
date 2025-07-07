@@ -14,8 +14,12 @@ import com.pablospring.miapi.presentation.mapper.ProductMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -26,7 +30,8 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
-    private final ProductMapper productoMapper;
+    private final ProductMapper productMapper;
+    private final FileStorageService fileStorageService;
     private final AuthUtil authUtil;
 
     public List<ProductResponse> listAll() {
@@ -47,7 +52,7 @@ public class ProductService {
     public Page<ProductResponse> listAllForPage(Pageable pageable) {
         Page<Product> products = productRepository.findAll(pageable);
 
-        return products.map(productoMapper::toResponse);
+        return products.map(productMapper::toResponse);
     }
 
     public Optional<Product> getForId(Long id) {
@@ -114,6 +119,28 @@ public class ProductService {
             throw new ForbiddenException("No tienes permiso para eliminar este producto.");
         }
         productRepository.delete(product);
+    }
+
+    public void save(Product product) {
+        productRepository.save(product);
+    }
+
+    public ProductResponse createWithImage(ProductRequest productRequest, MultipartFile file) throws IOException {
+        Product product = productMapper.toEntity(productRequest);
+
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
+
+        product.setUser(user); // <-- clave
+
+        if (file != null && !file.isEmpty()) {
+            String filename = fileStorageService.storeFile(file);
+            product.setImagenUrl("/api/products/imagen/" + filename);
+        }
+
+        Product savedProduct = productRepository.save(product);
+        return productMapper.toResponse(savedProduct);
     }
 
 

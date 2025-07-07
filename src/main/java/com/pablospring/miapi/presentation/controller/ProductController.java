@@ -5,18 +5,24 @@ import com.pablospring.miapi.payload.ApiResponse;
 import com.pablospring.miapi.presentation.dto.product.PageResponse;
 import com.pablospring.miapi.presentation.dto.product.ProductRequest;
 import com.pablospring.miapi.presentation.dto.product.ProductResponse;
+import com.pablospring.miapi.service.FileStorageService;
 import com.pablospring.miapi.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.net.MalformedURLException;
 import java.util.List;
+import java.util.Optional;
 
 
 @RestController
@@ -25,6 +31,7 @@ import java.util.List;
 public class ProductController {
 
     private final ProductService productService;
+    private final FileStorageService fileStorageService;
 
     @GetMapping
     public ApiResponse<PageResponse<ProductResponse>> getProductsPages(Pageable pageable) {
@@ -52,10 +59,13 @@ public class ProductController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ProductResponse> create(@Valid @RequestBody ProductRequest product) {
-        return ResponseEntity.ok(productService.create(product));
+    public ResponseEntity<ProductResponse> create(
+            @ModelAttribute ProductRequest product,
+            @RequestPart(value = "file", required = false) MultipartFile file) throws IOException {
+        ProductResponse createdProduct = productService.createWithImage(product, file);
+        return ResponseEntity.ok(createdProduct);
     }
 
     @PutMapping("/{id}")
@@ -71,5 +81,30 @@ public class ProductController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         productService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/imagen")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<String>> uploadImage(@PathVariable Long id,
+                                                           @RequestParam("file") MultipartFile file) throws IOException {
+        Optional<Product> optionalProduct = productService.getForId(id);
+        if (optionalProduct.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("Producto no encontrado"));
+        }
+
+        String filename = fileStorageService.storeFile(file);
+        Product product = optionalProduct.get();
+        product.setImagenUrl("/api/products/imagen/" + filename);
+        productService.save(product); // asegurate de tener save()
+
+        return ResponseEntity.ok(ApiResponse.success("Imagen subida correctamente", product.getImagenUrl()));
+    }
+
+    @GetMapping("/imagen/{filename:.+}")
+    public ResponseEntity<Resource> getImage(@PathVariable String filename) throws MalformedURLException {
+        Resource resource = fileStorageService.loadFile(filename);
+        return ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_JPEG)
+                .body(resource);
     }
 }
