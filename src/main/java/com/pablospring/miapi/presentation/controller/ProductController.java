@@ -5,6 +5,7 @@ import com.pablospring.miapi.payload.ApiResponse;
 import com.pablospring.miapi.presentation.dto.product.PageResponse;
 import com.pablospring.miapi.presentation.dto.product.ProductRequest;
 import com.pablospring.miapi.presentation.dto.product.ProductResponse;
+import com.pablospring.miapi.service.ExportService;
 import com.pablospring.miapi.service.FileStorageService;
 import com.pablospring.miapi.service.ProductService;
 import jakarta.validation.Valid;
@@ -32,6 +33,7 @@ public class ProductController {
 
     private final ProductService productService;
     private final FileStorageService fileStorageService;
+    private final ExportService exportService;
 
     @GetMapping
     public ApiResponse<PageResponse<ProductResponse>> getProductsPages(Pageable pageable) {
@@ -106,5 +108,30 @@ public class ProductController {
         return ResponseEntity.ok()
                 .contentType(MediaType.IMAGE_JPEG)
                 .body(resource);
+    }
+
+    @GetMapping("/export")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<byte[]> export(@RequestParam String format) throws Exception {
+        byte[] data;
+        String filename;
+        String contentType;
+
+        if (format.equalsIgnoreCase("excel")) {
+            data = exportService.exportToExcel();
+            filename = "productos.xlsx";
+            contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        } else if (format.equalsIgnoreCase("pdf")) {
+            data = exportService.exportToPdf();
+            filename = "productos.pdf";
+            contentType = "application/pdf";
+        } else {
+            return ResponseEntity.badRequest().build();
+        }
+
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=" + filename)
+                .header("Content-Type", contentType)
+                .body(data);
     }
 }

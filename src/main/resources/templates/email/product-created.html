@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Producto creado</title>
+    <style th:utext="${inlineCss}"></style>
+</head>
+<body>
+<div class="card">
+    <h2>🎉 ¡Nuevo producto creado! 🎉</h2>
+    <img th:src="${imagenUrl}" alt="Imagen del producto" class="product-image"/>
+    <p><strong>ID:</strong> <span th:text="${id}">123</span></p>
+    <p><strong>Nombre:</strong> <span th:text="${nombre}">Nombre del producto</span></p>
+    <p><strong>Precio:</strong> $<span th:text="${precio}">0.0</span></p>
+    <p>Gracias por confiar en nosotros.</p>
+
+    <div class="footer">
+         <p> &copy; 2025 Pau's Store. <span th:text="#{copyright.created}">Derechos</span></p>.
+    </div>
+</div>
+</body>
+</html>

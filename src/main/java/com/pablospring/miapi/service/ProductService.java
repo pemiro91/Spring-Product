@@ -1,6 +1,7 @@
 package com.pablospring.miapi.service;
 
 import com.pablospring.miapi.config.AuthUtil;
+import com.pablospring.miapi.domain.event.ProductCreateEvent;
 import com.pablospring.miapi.domain.exception.ForbiddenException;
 import com.pablospring.miapi.domain.exception.NotFoundException;
 import com.pablospring.miapi.domain.model.Product;
@@ -12,6 +13,7 @@ import com.pablospring.miapi.presentation.dto.product.ProductRequest;
 import com.pablospring.miapi.presentation.dto.product.ProductResponse;
 import com.pablospring.miapi.presentation.mapper.ProductMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -33,6 +35,7 @@ public class ProductService {
     private final ProductMapper productMapper;
     private final FileStorageService fileStorageService;
     private final AuthUtil authUtil;
+    private final ApplicationEventPublisher eventPublisher;
 
     public List<ProductResponse> listAll() {
         /* User actual = userRepository.findById(authUtil.getUserCurrent().getId())
@@ -140,6 +143,13 @@ public class ProductService {
         }
 
         Product savedProduct = productRepository.save(product);
+
+        eventPublisher.publishEvent(new ProductCreateEvent(
+                product.getId(),
+                product.getName(),
+                product.getPrice(),
+                product.getImagenUrl()
+        ));
         return productMapper.toResponse(savedProduct);
     }
 
